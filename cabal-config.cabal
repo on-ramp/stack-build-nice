@@ -20,4 +20,3 @@ program-default-options
   ghc-options: -static -optl-static
 
 jobs: 1
-symlink-bindir: /home/builder/.local/bin

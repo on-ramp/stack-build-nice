@@ -9,3 +9,19 @@ Cabal version: 2.4.1.0
 Stack version: 2.3.3
 
 The image is `FROM alpine` but configured for building static binaries; build outputs will run on any other Linux distro. Musl libc is linked into those binaries.
+
+## Basic usage, volumes ##
+
+First build the image:
+
+    docker build -t coinweb/stack-build-nice:latest .
+
+Then supposing you have a Stack project under `foobar_project` and `binary_outputs` directory:
+
+    docker run --rm -t \
+        -v $PWD/foobar_project:/home/builder/src \
+        -v $PWD/binary_outputs:/home/builder/bin \
+        coinweb/stack-build-nice \
+        stack build --copy-bins
+
+That's it. On build success, find the static executables under `binary_outputs/`.

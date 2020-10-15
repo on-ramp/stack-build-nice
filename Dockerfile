@@ -42,17 +42,23 @@ RUN curl -fsSL "$STACK_BIN" -o ${STACK_BIN##*/} && \
 
 #-- drop root
 RUN adduser -D -u 1000 builder && \
-    echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/enable-builder-sudo
+    echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/enable-builder-sudo && \
+    sed -i 's:profile\.d/\*\.sh:profile.d/*:' /etc/profile && \
+    printf 'test -d "$HOME/bin" && [ "${PATH#*$HOME/bin}" == "$PATH" ] && export PATH="$PATH:$HOME/bin"' > /etc/profile.d/add-home-bin-to-PATH
 # workaround sudo bug 42 https://github.com/sudo-project/sudo/issues/42
 RUN echo 'Set disable_coredump false' >> /etc/sudo.conf
 USER builder
 WORKDIR /home/builder
+ENV ENV=/etc/profile
 
 #-- configure Cabal and Stack
 COPY cabal-config.cabal stack-config.yaml /tmp/
 RUN install -Dm644 /tmp/stack-config.yaml /home/builder/.stack/config.yaml && \
-    install -Dm644 /tmp/cabal-config.cabal /home/builder/.cabal/config
+    install -Dm644 /tmp/cabal-config.cabal /home/builder/.cabal/config && \
+    :
 
-#-- add correctly permissioned volume for host code
-RUN mkdir src
+#-- add correctly permissioned volumes for host code & build outputs
+RUN mkdir src bin
 VOLUME /home/builder/src
+VOLUME /home/builder/bin
+WORKDIR /home/builder/src
