@@ -42,12 +42,17 @@ RUN curl -fsSL "$STACK_BIN" -o ${STACK_BIN##*/} && \
 
 #-- drop root
 RUN adduser -D -u 1000 builder && \
-    echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
-    echo 'Set disable_coredump false' >> /etc/sudo.conf && \
-    : "The latter works around sudo bug 42 https://github.com/sudo-project/sudo/issues/42"
+    echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/enable-builder-sudo
+# workaround sudo bug 42 https://github.com/sudo-project/sudo/issues/42
+RUN echo 'Set disable_coredump false' >> /etc/sudo.conf
 USER builder
 WORKDIR /home/builder
 
-#-- configure Stack
-COPY stack-config.yaml /tmp
-RUN install -Dm644 /tmp/stack-config.yaml /home/builder/.stack/config.yaml
+#-- configure Cabal and Stack
+COPY cabal-config.cabal stack-config.yaml /tmp/
+RUN install -Dm644 /tmp/stack-config.yaml /home/builder/.stack/config.yaml && \
+    install -Dm644 /tmp/cabal-config.cabal /home/builder/.cabal/config
+
+#-- add correctly permissioned volume for host code
+RUN mkdir src
+VOLUME /home/builder/src
